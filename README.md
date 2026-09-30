@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # z_int_poc_s1
 Interview PoC work
 =======
@@ -234,4 +233,3 @@ meridian_bank_poc/
 ## 9. How AI was used
 
 Claude (Anthropic) was used as a pair-programmer. It drafted the service skeletons, the demo console and this README from my architecture document and my design decisions: saga order, the idempotency layers, the token model, and the failure behaviours. I reviewed and adjusted the code and ran the scripted demo and the self-checks. The self-checks are there to exercise the claims the design makes; they are not a substitute for reading the code. Two refinements came out of building it: the service-token continuation for async retries, and 422 for key reuse (see §5).
->>>>>>> 9ddb6d1 (Meridian Bank digital assistant: solution design + dispute-intake prototype)

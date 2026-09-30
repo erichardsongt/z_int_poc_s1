@@ -24,7 +24,7 @@ Meridian (EU, ~4M retail customers) runs Salesforce Financial Services Cloud (FS
 | Escalation to a human agent with conversation context | Financial, investment or credit advice |
 | Mobile app (iOS/Android) and website; English + one local language | Voice/IVR (the façade and token model are designed to be reused by voice) |
 
-**Non-functional requirements:** account data processed only in the EU and under Meridian's control; complete audit trail of assistant actions; graceful degradation when bank systems are unavailable; design capacity of 1M conversations/month at a peak of 10 new conversations per second.
+**Non-functional requirements:** account data processed only in the EU and under Meridian's control; complete audit trail of assistant actions; graceful degradation when bank systems are unavailable; design capacity of about 50,000 conversations/month, with peaks of up to 1 new conversation per second (more than ten times the expected busiest-hour rate). The initial flows (balances, fee explanations, disputes) are unlikely to reach this volume on their own. The headroom is deliberate, so that intents added after launch (§14) do not require re-sizing.
 
 ### 3. Assumptions
 
