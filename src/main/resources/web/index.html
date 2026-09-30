@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Assistant: Dispute PoC</title>
+<style>
+  :root {
+    --navy: #0b2a4a; --ink: #1c2430; --muted: #5b6b7e; --line: #d8dee6; --bg: #f3f5f8; --card: #fff;
+    --ok: #1f8a4c; --warn: #b7791f; --bad: #c0392b; --info: #2f6db3; --chip: #eef2f7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); }
+  header { background: var(--navy); color: #fff; padding: 10px 20px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header .sub { opacity: .75; font-size: 12px; }
+  main { display: grid; grid-template-columns: 400px 1fr; gap: 18px; padding: 18px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
+  button { font: inherit; border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { border-color: var(--info); }
+  button.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  button.on { background: var(--info); color: #fff; border-color: var(--info); }
+  button.danger.on { background: var(--bad); border-color: var(--bad); }
+  button:disabled { opacity: .45; cursor: default; }
+  select { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); }
+  code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+
+  /* phone */
+  .phone { background: #111; border-radius: 34px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .screen { background: #f7f8fa; border-radius: 24px; height: 640px; display: flex; flex-direction: column; overflow: hidden; }
+  .appbar { background: var(--navy); color: #fff; padding: 14px 16px 10px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .appbar small { font-weight: 400; opacity: .7; font-size: 11px; }
+  .msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 86%; padding: 8px 11px; border-radius: 14px; white-space: pre-wrap; }
+  .msg.assistant { background: #fff; border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.customer { background: var(--info); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.system { align-self: center; background: #fff4e0; color: #7a4d00; font-size: 12px; border-radius: 8px; }
+  .opts { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .opts button { text-align: left; border-radius: 8px; }
+  .opts button small { display: block; color: var(--muted); font-size: 11px; }
+  .confirm table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+  .confirm td { padding: 2px 8px 2px 0; vertical-align: top; }
+  .confirm td:first-child { color: var(--muted); }
+  .confirm .row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .pill { display: inline-block; margin-top: 6px; padding: 3px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; }
+  .composer { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--line); background: #fff; }
+  .dlist { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .ditem { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+  .ditem .state { display: inline-block; margin: 4px 6px 0 0; }
+  .composer button { border-radius: 18px; }
+  .guided { background: #fff4e0; color: #7a4d00; font-size: 12px; padding: 8px 12px; border-bottom: 1px solid #f0d9a8; }
+  .guided button { font-size: 12px; padding: 3px 8px; }
+  .composer input:disabled { background: #f1f3f6; }
+  .composer input { flex: 1; border: 1px solid var(--line); border-radius: 18px; padding: 8px 12px; font: inherit; }
+  .login { padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ops */
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 3px 10px; font-size: 12px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  .btnrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .label { font-size: 12px; color: var(--muted); min-width: 90px; }
+  table.grid { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.grid th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 4px 6px; }
+  table.grid td { border-bottom: 1px solid #eef1f5; padding: 5px 6px; vertical-align: top; }
+  .state { font-weight: 600; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--chip); white-space: nowrap; }
+  .s-CORE_REGISTERED, .s-RESOLVED_ACCEPTED { background: #e3f4ea; color: var(--ok); }
+  .s-CORE_PENDING, .s-RECEIVED, .s-CASE_OPEN { background: #fff4e0; color: var(--warn); }
+  .s-MANUAL_REVIEW, .s-RESOLVED_REJECTED { background: #fde8e6; color: var(--bad); }
+  .s-IN_REVIEW { background: #e6effa; color: var(--info); }
+  .err { color: var(--bad); font-size: 11px; }
+  .audit { max-height: 230px; overflow-y: auto; font-size: 11px; }
+  .audit div { padding: 2px 0; border-bottom: 1px dashed #eef1f5; }
+  .badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: var(--chip); }
+  .badge.good { background: #e3f4ea; color: var(--ok); }
+  .badge.bad { background: #fde8e6; color: var(--bad); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 1300px) { .grid2 { grid-template-columns: 1fr; } }
+  .hint { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Meridian Digital Assistant: dispute-intake prototype</h1>
+  <span class="sub">All systems simulated locally · Zingly PoC · not production code</span>
+</header>
+<main>
+  <section>
+    <div class="phone"><div class="screen">
+      <div class="appbar"><span>Meridian <small id="who"></small></span><small id="acr"></small></div>
+      <div id="loginView" class="login">
+        <b>Mobile app simulator</b>
+        <span class="hint">Logs in as the bank app would, then exchanges the app token for an assistant-scoped token (RFC 8693).</span>
+        <select id="customer">
+          <option value="C-100234">Anna K. (C-100234): Visa Debit •• 4821</option>
+          <option value="C-100877">Luca M. (C-100877): Mastercard •• 1177</option>
+        </select>
+        <button class="primary" onclick="login('low')">Log in with PIN (acr=low)</button>
+        <button onclick="login('high')">Log in with Face ID (acr=high)</button>
+      </div>
+      <div id="chatView" style="display:none; flex:1; display:none; flex-direction:column; min-height:0">
+        <div id="guidedBar" class="guided" style="display:none">
+          <b>Guided mode:</b> our AI assistant is temporarily unavailable. Please use the buttons.
+          <div class="btnrow" style="margin-top:6px">
+            <button onclick="sendAction('menu', 'start_dispute', 'Dispute a card payment')">Dispute a payment</button>
+            <button onclick="sendAction('menu', 'status', 'Check my disputes')">My disputes</button>
+            <button onclick="sendAction('menu', 'agent', 'Talk to a colleague')">Talk to a colleague</button>
+          </div>
+        </div>
+        <div id="msgs" class="msgs"></div>
+        <div class="composer" id="composer">
+          <button title="Show my existing disputes" onclick="sendAction('status', null, 'My disputes')">My disputes</button>
+          <input id="text" placeholder="Try: I don't recognise a charge" onkeydown="if(event.key==='Enter')sendText()">
+          <button class="primary" onclick="sendText()">Send</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="panel" style="margin-top:14px">
+      <h2>Assistant token (AT1) claims</h2>
+      <div id="claims" class="kv"><div>not logged in</div><div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>Chaos controls <span class="badge" id="breaker">breaker: -</span></h2>
+      <div class="btnrow" style="margin-bottom:6px">
+        <span class="label">Core banking</span>
+        <button data-core="NORMAL" onclick="coreMode('NORMAL')">Normal</button>
+        <button data-core="FLAKY" onclick="coreMode('FLAKY')">Flaky</button>
+        <button data-core="DOWN" class="danger" onclick="coreMode('DOWN')">Down</button>
+        <button onclick="coreScript(['TIMEOUT_AFTER_COMMIT'])">Next write: commit then time out</button>
+      </div>
+      <div class="btnrow" style="margin-bottom:6px">
+        <span class="label">AI model (EU)</span>
+        <button data-llm="NORMAL/NORMAL" onclick="modelMode('NORMAL','NORMAL')">Normal</button>
+        <button data-llm="DOWN/NORMAL" class="danger" onclick="modelMode('DOWN','NORMAL')">Primary down</button>
+        <button data-llm="SLOW/NORMAL" class="danger" onclick="modelMode('SLOW','NORMAL')">Primary slow</button>
+        <button data-llm="DOWN/DOWN" class="danger" onclick="modelMode('DOWN','DOWN')">All down (guided)</button>
+        <span class="badge" id="llmBadge">model: -</span>
+      </div>
+      <div class="btnrow">
+        <span class="label">Salesforce</span>
+        <button data-sf="NORMAL" onclick="sfMode('NORMAL')">Normal</button>
+        <button data-sf="DOWN" class="danger" onclick="sfMode('DOWN')">Down</button>
+        <span class="hint" id="coreScript"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Disputes (assistant data plane) <span class="hint">outbox: <span id="outbox">0</span></span></h2>
+      <table class="grid"><thead><tr><th>Dispute</th><th>State</th><th>SF case</th><th>Core ref</th><th>Tries</th><th>Agent action in Salesforce</th></tr></thead>
+        <tbody id="disputes"><tr><td colspan="6" class="hint">No disputes yet.</td></tr></tbody></table>
+      <label class="hint"><input type="checkbox" id="dup"> deliver status events twice (tests de-duplication)</label>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Core banking records <span class="badge" id="dupBadge">duplicates: 0</span></h2>
+        <table class="grid"><thead><tr><th>Core ref</th><th>Client ref (Idempotency-Key)</th><th>Txn</th></tr></thead><tbody id="core"></tbody></table>
+        <p class="hint">RegisterDispute calls: <span id="coreCalls">0</span>. The core is non-idempotent: the façade prevents duplicates.</p>
+      </div>
+      <div class="panel">
+        <h2>Salesforce cases</h2>
+        <table class="grid"><thead><tr><th>Case</th><th>Dispute_Ref__c</th><th>Status</th><th>Core ref</th></tr></thead><tbody id="cases"></tbody></table>
+        <p class="hint">Upsert calls: <span id="sfCalls">0</span>. Upsert by external ID means one case per dispute.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Audit trail (hash-chained) <span class="badge" id="chain">chain: -</span></h2>
+      <div id="audit" class="audit mono"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+let token = null, claims = null, conv = null, lastId = 0, pendingConfirm = null, customerId = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(method, path, body, auth = true) {
+  const h = {'Content-Type': 'application/json'};
+  if (auth && token) h['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(path, {method, headers: h, body: body ? JSON.stringify(body) : undefined});
+  let data = null; try { data = await r.json(); } catch (e) {}
+  return {status: r.status, ok: r.ok, data, www: r.headers.get('WWW-Authenticate')};
+}
+
+async function login(acr) {
+  customerId = customerId || $('customer').value;
+  const r = await api('POST', '/demo/app-login', {customerId, acr}, false);
+  token = r.data.accessToken; claims = r.data.claims;
+  renderClaims();
+  $('who').textContent = ' · ' + ($('customer').selectedOptions[0].text.split(' (')[0]);
+  $('acr').textContent = 'acr=' + claims.acr;
+  if (!conv) {
+    const s = await api('POST', '/v1/conversations', {});
+    conv = s.data.conversationId;
+    setMode(s.data.assistantMode);
+    $('loginView').style.display = 'none';
+    $('chatView').style.display = 'flex';   // shown only once the conversation exists
+    s.data.messages.forEach(addMsg);
+    $('text').focus();
+  }
+}
+
+function renderClaims() {
+  const keys = ['sub', 'aud', 'acr', 'scope', 'azp', 'exp'];
+  $('claims').innerHTML = keys.map(k => `<div>${k}</div><div class="mono">${esc(k === 'exp' ? new Date(claims[k]*1000).toLocaleTimeString() : claims[k])}</div>`).join('')
+    + '<div>customer no.</div><div class="hint">not present: pairwise subject only</div>';
+}
+
+function addMsg(m) {
+  if (m.id <= lastId) return;
+  lastId = m.id;
+  const div = document.createElement('div');
+  div.className = 'msg ' + m.role;
+  div.innerHTML = esc(m.text);
+  const c = m.card;
+  if (c && c.type === 'options') {
+    const box = document.createElement('div'); box.className = 'opts';
+    c.options.forEach(o => {
+      const b = document.createElement('button');
+      b.innerHTML = esc(o.label) + (o.detail || o.note ? `<small>${esc(o.detail || '')}${o.note ? ' · ' + esc(o.note) : ''}</small>` : '');
+      b.disabled = !!o.disabled;
+      b.onclick = () => { box.querySelectorAll('button').forEach(x => x.disabled = true); sendAction(c.action, o.value, o.label); };
+      box.appendChild(b);
+    });
+    div.appendChild(box);
+  } else if (c && c.type === 'confirm') {
+    const box = document.createElement('div'); box.className = 'confirm';
+    box.innerHTML = '<table>' + c.rows.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('') + '</table>';
+    const row = document.createElement('div'); row.className = 'row';
+    const requestId = crypto.randomUUID();   // generated once per confirmation (idempotency layer 1)
+    const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Confirm';
+    const dbl = document.createElement('button'); dbl.textContent = 'Confirm ×2 (double-tap)';
+    dbl.title = 'Sends the same confirmation twice concurrently';
+    const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+    cancel.onclick = () => sendAction('cancel', null, 'Cancel');
+    row.append(ok, dbl, cancel); box.appendChild(row); div.appendChild(box);
+    document.querySelectorAll('.confirm .row button').forEach(b => b.disabled = true); // older cards are stale
+    ok.onclick = () => confirmDispute(requestId, 1, row);
+    dbl.onclick = () => confirmDispute(requestId, 2, row);
+  } else if (c && c.type === 'disputes') {
+    const box = document.createElement('div'); box.className = 'dlist';
+    box.innerHTML = c.items.map(d => `<div class="ditem"><div><b>${esc(d.merchant)}</b> · ${esc(d.amount)}</div>
+        <div class="hint">${esc(d.reason)} · reported ${esc(d.notifiedOn)}</div>
+        <span class="state s-${esc(d.state)}">${esc(d.stateLabel)}</span>
+        <span class="hint mono">${esc(d.disputeId)}${d.caseNumber ? ' · case ' + esc(d.caseNumber) : ''}</span></div>`).join('');
+    div.appendChild(box);
+  } else if (c && c.type === 'dispute') {
+    div.innerHTML += `<br><span class="pill">${esc(c.disputeId)} · ${esc(c.stateLabel)}${c.caseNumber ? ' · case ' + esc(c.caseNumber) : ''}</span>`;
+  }
+  $('msgs').appendChild(div);
+  $('msgs').scrollTop = 1e9;
+}
+
+function sys(text, withButton) {
+  const div = document.createElement('div'); div.className = 'msg system'; div.textContent = text;
+  if (withButton) { const b = document.createElement('button'); b.style.marginLeft = '8px'; b.textContent = withButton.label; b.onclick = withButton.fn; div.appendChild(b); }
+  $('msgs').appendChild(div); $('msgs').scrollTop = 1e9;
+}
+
+function setMode(m) {
+  const guided = m === 'guided';
+  $('guidedBar').style.display = guided ? 'block' : 'none';
+  $('text').disabled = guided;
+  $('text').placeholder = guided ? 'Free text unavailable, please use the buttons' : "Try: I don't recognise a charge";
+  document.querySelector('#composer .primary').disabled = guided;
+}
+
+async function post(body) {
+  const r = await api('POST', `/v1/conversations/${conv}/messages`, body);
+  if (r.ok) { r.data.messages.forEach(addMsg); setMode(r.data.assistantMode); }
+  return r;
+}
+
+async function sendText() {
+  const t = $('text').value.trim(); if (!t || !conv) return;
+  $('text').value = '';
+  const r = await post({text: t});
+  if (!r.ok) sys(`HTTP ${r.status}: ${r.data?.title || ''}`);
+}
+
+async function sendAction(action, value, label) {
+  addMsg({id: lastId + 0.5, role: 'customer', text: label});
+  const r = await post({action, value});
+  if (!r.ok) sys(`HTTP ${r.status}: ${r.data?.title || ''} ${r.data?.detail || ''}`);
+}
+
+async function confirmDispute(requestId, times, row) {
+  const calls = Array.from({length: times}, () => post({action: 'confirm', disputeRequestId: requestId}));
+  const results = await Promise.all(calls);
+  if (row && results.some(r => r.ok)) row.querySelectorAll('button').forEach(b => b.disabled = true);
+  const stepUp = results.find(r => r.status === 401 && (r.www || '').includes('insufficient_user_authentication'));
+  if (stepUp) {
+    sys('Confirm it\'s you to submit a dispute (RFC 9470 step-up).', {label: 'Use Face ID', fn: async () => {
+      await login('high');
+      sys('Re-authenticated (acr=high). Retrying with the same disputeRequestId.');
+      confirmDispute(requestId, times, row);
+    }});
+    return;
+  }
+  const bad = results.find(r => !r.ok);
+  if (bad) sys(`HTTP ${bad.status}: ${bad.data?.title || ''}`);
+}
+
+// ---- async messages (saga updates, status events): pull-on-open / polling
+setInterval(async () => {
+  if (!conv) return;
+  const r = await api('GET', `/v1/conversations/${conv}?after=${Math.floor(lastId)}`);
+  if (r.ok) { r.data.messages.forEach(addMsg); setMode(r.data.assistantMode); }
+}, 1500);
+
+// ---- ops console
+async function coreMode(mode) { await api('POST', '/admin/chaos', {target: 'core', mode, script: []}, false); refresh(); }
+async function coreScript(script) { await api('POST', '/admin/chaos', {target: 'core', script}, false); refresh(); }
+async function modelMode(primary, secondary) { await api('POST', '/admin/chaos', {target: 'model', primary, secondary}, false); refresh(); }
+async function sfMode(mode) { await api('POST', '/admin/chaos', {target: 'salesforce', mode}, false); refresh(); }
+async function agent(ref, status) {
+  await api('POST', `/admin/salesforce/cases/${ref}/status`, {status, duplicateDelivery: $('dup').checked}, false);
+  setTimeout(refresh, 300);
+}
+
+async function refresh() {
+  const r = await api('GET', '/admin/state', null, false);
+  if (!r.ok) return;
+  const s = r.data;
+  document.querySelectorAll('[data-core]').forEach(b => b.classList.toggle('on', b.dataset.core === s.core.mode));
+  document.querySelectorAll('[data-sf]').forEach(b => b.classList.toggle('on', b.dataset.sf === s.salesforce.mode));
+  $('coreScript').textContent = s.core.script?.length ? 'core scripted next: ' + s.core.script.join(', ') : '';
+  $('breaker').textContent = 'core breaker: ' + s.coreCircuitBreaker;
+  const ep = s.model.endpoints || {};
+  const key = ep['eu-primary'] + '/' + ep['eu-secondary'];
+  document.querySelectorAll('[data-llm]').forEach(b => b.classList.toggle('on', b.dataset.llm === key));
+  const served = s.model.gateway.servedBy;
+  $('llmBadge').textContent = served === 'none' ? 'model: none, guided mode' : 'model served by ' + served;
+  $('llmBadge').className = 'badge ' + (served === 'eu-primary' ? 'good' : 'bad');
+  $('breaker').className = 'badge ' + (s.coreCircuitBreaker === 'CLOSED' ? 'good' : 'bad');
+  $('outbox').textContent = s.outbox.length;
+  $('disputes').innerHTML = s.disputes.length ? s.disputes.map(d => `
+    <tr><td class="mono">${esc(d.disputeId)}<br><span class="hint">${esc(d.transaction.merchant)}</span></td>
+      <td><span class="state s-${d.state}">${d.state}</span>${d.lastError ? `<div class="err">${esc(d.lastError)}</div>` : ''}</td>
+      <td class="mono">${esc(d.caseNumber || '-')}</td><td class="mono">${esc(d.coreRef || '-')}</td><td>${d.attempts}</td>
+      <td>${d.caseId ? `<div class="btnrow"><button onclick="agent('${d.disputeId}','In Review')">In Review</button>
+          <button onclick="agent('${d.disputeId}','Closed - Accepted')">Accept</button>
+          <button onclick="agent('${d.disputeId}','Closed - Rejected')">Reject</button></div>` : '<span class="hint">no case yet</span>'}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="hint">No disputes yet.</td></tr>';
+  const recs = s.core.disputeRecords || [];
+  $('core').innerHTML = recs.map(d => `<tr><td class="mono">${esc(d.coreRef)}</td><td class="mono">${esc(d.clientReference)}</td><td class="mono">${esc(d.txnRef)}</td></tr>`).join('') || '<tr><td colspan="3" class="hint">none</td></tr>';
+  $('coreCalls').textContent = s.core.registerCalls;
+  $('dupBadge').textContent = 'duplicates: ' + s.core.clientReferencesWithDuplicates;
+  $('dupBadge').className = 'badge ' + (s.core.clientReferencesWithDuplicates ? 'bad' : 'good');
+  $('cases').innerHTML = (s.salesforce.cases || []).map(c => `<tr><td class="mono">${esc(c.CaseNumber)}</td><td class="mono">${esc(c.Dispute_Ref__c)}</td><td>${esc(c.Status)}</td><td class="mono">${esc(c.Core_Dispute_Ref__c || '-')}</td></tr>`).join('') || '<tr><td colspan="4" class="hint">none</td></tr>';
+  $('sfCalls').textContent = s.salesforce.upsertCalls;
+  $('chain').textContent = 'chain valid: ' + s.audit.chainValid + ' · ' + s.audit.entries + ' entries';
+  $('chain').className = 'badge ' + (s.audit.chainValid ? 'good' : 'bad');
+  $('audit').innerHTML = s.audit.tail.slice().reverse().map(a => `<div>#${a.seq} <b>${esc(a.type)}</b> ${esc(JSON.stringify(a.detail))} <span class="hint">${esc(a.hash)}</span></div>`).join('');
+}
+setInterval(refresh, 1000); refresh();
+</script>
+</body>
+</html>

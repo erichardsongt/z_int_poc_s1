@@ -1,0 +1,24 @@
+# Alternative to ./docker-run.sh for people who prefer Compose:
+#   docker compose up --build          (demo console on http://localhost:8080)
+#   docker compose down
+# Same sandbox profile as docker-run.sh.
+services:
+  meridian-poc:
+    build: .
+    image: meridian-dispute-poc:local
+    container_name: meridian-dispute-poc
+    command: ["serve"]
+    ports:
+      - "127.0.0.1:${MERIDIAN_HOST_PORT:-8080}:8080"   # host loopback only
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    mem_limit: 512m
+    cpus: 1.5
+    pids_limit: 256
+    restart: "no"
