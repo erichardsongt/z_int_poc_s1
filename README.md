@@ -1,4 +1,3 @@
-=======
 # Meridian Bank: Dispute-Intake Prototype
 
 A runnable slice of the *Meridian Bank Digital AI Assistant* solution architecture. It covers the riskiest integration point in the design: **taking a card dispute from a chat conversation into Salesforce and a legacy SOAP core-banking system without losing or duplicating it**, when those systems are slow, failing, or time out after they have already done the work.
